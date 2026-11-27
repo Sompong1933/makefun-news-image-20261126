@@ -6,7 +6,15 @@
 // Outside the grader's container, MAKEFUN_OUTPUT_DIR stands in for /output:
 //   mkdir -p out && MAKEFUN_OUTPUT_DIR=out node main.ts
 
-import { copyFileSync } from 'node:fs';
+import { copyFileSync, readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 
-copyFileSync(new URL('./entry.png', import.meta.url), join(process.env.MAKEFUN_OUTPUT_DIR ?? '/output', 'entry.png'));
+const outDir = process.env.MAKEFUN_OUTPUT_DIR ?? '/output';
+const outPath = join(outDir, 'entry.png');
+copyFileSync(new URL('./entry.png', import.meta.url), outPath);
+
+// Verify the copy: a whole PNG, within the gate's 1 MiB limit.
+const bytes = readFileSync(outPath);
+if (bytes.subarray(0, 8).toString('hex') !== '89504e470d0a1a0a') throw new Error('entry.png is not a PNG');
+if (statSync(outPath).size > 1048576) throw new Error('entry.png exceeds 1 MiB');
+console.log(`entry.png written (${bytes.length} bytes)`);
